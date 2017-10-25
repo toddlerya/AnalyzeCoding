@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 # author: toddler
+# date: 20171025
 
 
 from lxml import etree
 import requests
-import urllib2
 
 
 proxy_type = ['/', '/gngn/', '/gnpt/', '/gwgn/', '/gwpt/']
@@ -16,6 +16,7 @@ headers = {
 
 def test_proxy(proxy, test_url):
     """
+    测试IP代理是否可用
     测试IP代理是否可用
     :param proxy: 代理配置 ip:port
     :return:
