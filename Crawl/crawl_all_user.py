@@ -19,8 +19,9 @@ def get_best_user():
     else:
         try:
             temp_json_data = bu_resp.json()
-            if temp_json_data[code] == 0:
-                pass
+            if temp_json_data['code'] == 0:
+                users_data = temp_json_data['data'][0]
+                print users_data[0]
         except requests.RequestException as err:
             raise err
 

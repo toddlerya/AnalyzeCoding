@@ -3,6 +3,8 @@
 # author: toddler
 # date: 20171025
 
+# todo 1. 将获取的IP代理存储到sqlite中
+# todo 2. 定期更新数据库内的IP代理，并建立打分机制，存活久的代理IP评分高，优先使用
 
 from lxml import etree
 import requests
@@ -68,4 +70,5 @@ def get_free_proxy(goal_url):
 
 
 if __name__ == '__main__':
+    # print get_free_proxy("http://wwww.baidu.com")
     print get_free_proxy("https://coding.net")
