@@ -4,7 +4,7 @@
 
 import requests
 import sys
-import urllib2
+import sqlite3
 
 sys.path.append("..")
 from Lib.my_lib import WriteLog, re_joint_dir_by_os, load_user_agents
@@ -21,6 +21,12 @@ all_user_list = ['coding']  # 初始化一个共有用户, 此用户无friends_a
 temp_all_user = re_joint_dir_by_os('..|Data|all_user.txt')
 
 f_all_user = open(temp_all_user, 'wb+')
+
+db_path = re_joint_dir_by_os('..|Data|test.db')
+
+db = sqlite3.connect(db_path)
+cur = db.cursor()
+insert_sql = "INSERT INTO coding_all_user (global_key, from_last) VALUES (?, ?)"
 
 def crawl_best_user():
     """
@@ -67,8 +73,9 @@ def crawl_user_friends(global_key):
                 friend = fi['global_key']
                 if friend not in all_user_list:
                     all_user_list.append(friend)
-                    f_all_user.write(friend)
+                    f_all_user.write("username: {0}, from_user: {1}".format(friend, global_key))
                     f_all_user.write('\n')
+                    cur.execute(insert_sql, (friend, global_key))
                     crawl_user_friends(friend)
         else:
             print f_json['code']
@@ -94,6 +101,8 @@ def main():
         print '未获取到第一个用户信息'
         sys.exit()
     f_all_user.close()
+    db.commit()
+    db.close()
 
 
 if __name__ == '__main__':
