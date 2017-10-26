@@ -16,6 +16,7 @@ import glob
 import sys
 import time
 import datetime
+import random
 
 
 class ColorPrint:
@@ -114,6 +115,21 @@ def re_joint_dir_by_os(input_path):
         return jointed_dir
     except BaseException, e:
         raise e
+
+
+def load_user_agents(ua_file):
+    """
+    加载
+    :param ua_file: 存储UA文件的路径，文件内每个UA一行
+    :return:
+    """
+    ua_list = []
+    with open(ua_file, 'rb') as f:
+        for ua in f.readlines():
+            if ua:
+                ua_list.append(ua.strip()[1:-1])
+    random.shuffle(ua_list)
+    return ua_list
 
 
 def clean(del_path=""):
