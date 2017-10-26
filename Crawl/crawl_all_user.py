@@ -75,7 +75,9 @@ def crawl_user_friends(global_key):
                     all_user_list.append(friend)
                     f_all_user.write("username: {0}, from_user: {1}".format(friend, global_key))
                     f_all_user.write('\n')
+                    f_all_user.flush()
                     cur.execute(insert_sql, (friend, global_key))
+                    db.commit()
                     crawl_user_friends(friend)
         else:
             print f_json['code']
@@ -101,7 +103,6 @@ def main():
         print '未获取到第一个用户信息'
         sys.exit()
     f_all_user.close()
-    db.commit()
     db.close()
 
 
