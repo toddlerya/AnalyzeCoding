@@ -93,6 +93,7 @@ def main():
     else:
         print '未获取到第一个用户信息'
         sys.exit()
+    f_all_user.close()
 
 
 if __name__ == '__main__':
