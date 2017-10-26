@@ -82,7 +82,7 @@ def crawl_user_followers(global_key):
     :param global_key 用户的全局唯一标识
     :return:
     """
-    followers_api = 'https://coding.net/api/user/followers/{}?page=1&pageSize=9999999999'.format(global_key)
+    followers_api = 'https://coding.net/api/user/followers/{}?page=1&pageSize=999999999'.format(global_key)
 
 
 
