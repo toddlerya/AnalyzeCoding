@@ -18,7 +18,7 @@ headers = {
 
 ua_file = re_joint_dir_by_os('user_agents.txt')
 ua_list = load_user_agents(ua_file)
-
+all_user_list = ['coding']  # 初始化一个共有用户, 此用户无friends_api与followers_api
 
 db_path = re_joint_dir_by_os('..|Data|analyzeCoding.db')
 db = sqlite3.connect(db_path)
@@ -64,8 +64,10 @@ def crawl_user_friends(father_nodes):
         'page': '1',
         'pageSize': '999999999'
     }
+    each_user_friends = list()
     for global_key in father_nodes:
-        each_user_friends = ['coding']  # 初始化一个共有用户, 此用户无friends_api与followers_api
+        if global_key in all_user_list:
+            continue
         friends_api = 'https://coding.net/api/user/friends/{0}'.format(global_key)
         print friends_api
         fr = requests.get(friends_api, params=payload)
@@ -80,7 +82,8 @@ def crawl_user_friends(father_nodes):
                 user_all_friends = ','.join(each_user_friends)
                 cur.execute(insert_sql, (global_key, user_all_friends))
                 db.commit()
-                each_user_friends.remove('coding')
+                all_user_list.append(global_key)
+                print each_user_friends
                 crawl_user_friends(each_user_friends)
             else:
                 print f_json['code']
