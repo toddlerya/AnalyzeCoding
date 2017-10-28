@@ -101,7 +101,7 @@ def crawl_user_friends(father_nodes):
                 all_user_list.append(global_key)
                 crawl_user_friends(each_user_friends)
             else:
-                wl.wl_error("获取friends-api的json数据状态码错误,状态码为: {}".format(f_json['code']))
+                wl.wl_error("获取friends-api的json数据状态码错误,状态码为: {0}, url为: {1}".format(f_json['code'], friends_api))
         else:
             wl.wl_error("访问{0}错误, HTTP状态码为: {1}".format(friends_api, fr.status_code))
 
