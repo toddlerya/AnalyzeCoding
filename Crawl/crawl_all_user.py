@@ -34,8 +34,6 @@ if len(temp_query_db_users) > 0:
 else:
     all_user_list = ['coding']  # 初始化一个共有用户, 此用户无friends_api与followers_api
 
-print len(all_user_list)
-
 
 def crawl_best_user():
     """
@@ -77,6 +75,7 @@ def crawl_user_friends(father_nodes):
     }
     each_user_friends = list()
     for global_key in father_nodes:
+        print global_key
         if global_key in all_user_list:
             continue
         try:
@@ -119,8 +118,10 @@ def main():
         print '未获取到种子用户信息'
         db.close()
     if len(set(all_user_list) - set(seed_users)) > 0:  # 判断是否需要断点抓取
+        print '从数据库结果开始继续抓取'
         crawl_user_friends(all_user_list)
     else:
+        print '从热门用户开始抓取'
         crawl_user_friends(seed_users)
     db.close()
 
