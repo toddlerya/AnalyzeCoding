@@ -20,7 +20,7 @@ ua_file = re_joint_dir_by_os('user_agents.txt')
 ua_list = load_user_agents(ua_file)
 
 
-db_path = re_joint_dir_by_os('..|Data|test.db')
+db_path = re_joint_dir_by_os('..|Data|analyzeCoding.db')
 db = sqlite3.connect(db_path)
 cur = db.cursor()
 insert_sql = "INSERT INTO coding_all_user (global_key, friends) VALUES (?, ?)"
