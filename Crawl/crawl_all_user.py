@@ -9,6 +9,8 @@ import sqlite3
 sys.path.append("..")
 from Lib.my_lib import WriteLog, re_joint_dir_by_os, load_user_agents
 
+sys.setrecursionlimit(99999999)  # 设置递归深度, 避免报错 RuntimeError: maximum recursion depth exceeded in cmp
+
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
