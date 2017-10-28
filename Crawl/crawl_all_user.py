@@ -101,13 +101,12 @@ def crawl_user_followers(global_key):
 def main():
     seed_users = crawl_best_user()
     print seed_users
-    # if seed_users:
-    #     crawl_user_friends(seed_users)
-    # else:
-    #     print '未获取到第一个用户信息'
-    #     sys.exit()
-    # f_all_user.close()
-    # db.close()
+    if seed_users:
+        crawl_user_friends(seed_users)
+    else:
+        print '未获取到种子用户信息'
+        sys.exit()
+    db.close()
 
 
 if __name__ == '__main__':
