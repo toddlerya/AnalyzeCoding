@@ -5,7 +5,6 @@
 import requests
 import sys
 import sqlite3
-from collections import deque
 
 sys.path.append("..")
 from Lib.my_lib import WriteLog, re_joint_dir_by_os, load_user_agents
@@ -18,12 +17,20 @@ headers = {
 
 ua_file = re_joint_dir_by_os('user_agents.txt')
 ua_list = load_user_agents(ua_file)
-all_user_list = ['coding']  # 初始化一个共有用户, 此用户无friends_api与followers_api
+
 
 db_path = re_joint_dir_by_os('..|Data|analyzeCoding.db')
 db = sqlite3.connect(db_path)
 cur = db.cursor()
 insert_sql = "INSERT INTO coding_all_user (global_key, friends) VALUES (?, ?)"
+
+cur.execute("SELECT global_key FROM coding_all_user")
+temp_query_db_users = cur.fetchall()
+if len(temp_query_db_users) > 0:
+    db_users = [item[0] for item in temp_query_db_users]
+    all_user_list = db_users
+else:
+    all_user_list = ['coding']  # 初始化一个共有用户, 此用户无friends_api与followers_api
 
 
 def crawl_best_user():
@@ -68,7 +75,10 @@ def crawl_user_friends(father_nodes):
     for global_key in father_nodes:
         if global_key in all_user_list:
             continue
-        friends_api = 'https://coding.net/api/user/friends/{0}'.format(global_key)
+        try:
+            friends_api = 'https://coding.net/api/user/friends/{0}'.format(global_key.encode('utf-8'))
+        except Exception, url_api_err:
+            print url_api_err
         print friends_api
         fr = requests.get(friends_api, params=payload)
         if fr.status_code == 200:
@@ -83,7 +93,6 @@ def crawl_user_friends(father_nodes):
                 cur.execute(insert_sql, (global_key, user_all_friends))
                 db.commit()
                 all_user_list.append(global_key)
-                print each_user_friends
                 crawl_user_friends(each_user_friends)
             else:
                 print f_json['code']
@@ -100,16 +109,15 @@ def crawl_user_followers(global_key):
     followers_api = 'https://coding.net/api/user/followers/{}?page=1&pageSize=999999999'.format(global_key)
 
 
-
 def main():
     seed_users = crawl_best_user()
-    print seed_users
-    if seed_users:
-        crawl_user_friends(seed_users)
-    else:
-        print '未获取到种子用户信息'
-        sys.exit()
-    db.close()
+    # print seed_users
+    # if seed_users:
+    #     crawl_user_friends(seed_users)
+    # else:
+    #     print '未获取到种子用户信息'
+    #     sys.exit()
+    # db.close()
 
 
 if __name__ == '__main__':
