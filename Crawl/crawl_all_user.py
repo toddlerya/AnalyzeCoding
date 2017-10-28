@@ -5,6 +5,7 @@
 import requests
 import sys
 import sqlite3
+from collections import deque
 
 sys.path.append("..")
 from Lib.my_lib import WriteLog, re_joint_dir_by_os, load_user_agents
@@ -17,20 +18,17 @@ headers = {
 
 ua_file = re_joint_dir_by_os('user_agents.txt')
 ua_list = load_user_agents(ua_file)
-all_user_list = ['coding']  # 初始化一个共有用户, 此用户无friends_api与followers_api
-temp_all_user = re_joint_dir_by_os('..|Data|all_user.txt')
 
-f_all_user = open(temp_all_user, 'wb+')
 
 db_path = re_joint_dir_by_os('..|Data|test.db')
-
 db = sqlite3.connect(db_path)
 cur = db.cursor()
-insert_sql = "INSERT INTO coding_all_user (global_key, from_last) VALUES (?, ?)"
+insert_sql = "INSERT INTO coding_all_user (global_key, friends) VALUES (?, ?)"
+
 
 def crawl_best_user():
     """
-    获取排行第一的热门用户
+    获取热门用户作为种子
     :return:
     """
     url_best_user = "https://coding.net/api/tweet/best_user"
@@ -40,11 +38,15 @@ def crawl_best_user():
         sys.exit()
     else:
         try:
+            seeds = list()
             temp_json_data = bu_resp.json()
             if temp_json_data['code'] == 0:
-                users_data = temp_json_data['data'][0]
-                global_key = users_data['global_key']
-                return global_key
+                users_data = temp_json_data['data']
+                for user in users_data:
+                    global_key = user['global_key']
+                    if global_key != 'coding':
+                        seeds.append(global_key)
+                return seeds
             else:
                 print "获取热门用户信息异常, json状态码不为0"
                 return False
@@ -52,37 +54,38 @@ def crawl_best_user():
             raise err
 
 
-def crawl_user_friends(global_key):
+def crawl_user_friends(father_nodes):
     """
     获取用户关注人列表
-    :param global_key 用户的全局唯一标识
+    :param global_keys 父节点列表
     :return:
     """
     payload = {
         'page': '1',
         'pageSize': '999999999'
     }
-    friends_api = 'https://coding.net/api/user/friends/{0}'.format(global_key)
-    print friends_api, len(all_user_list)
-    fr = requests.get(friends_api, params=payload)
-    if fr.status_code == 200:
-        f_json = fr.json()
-        if f_json['code'] == 0:
-            user_friends_info = f_json['data']['list']
-            for fi in user_friends_info:
-                friend = fi['global_key']
-                if friend not in all_user_list:
-                    all_user_list.append(friend)
-                    f_all_user.write("username: {0}, from_user: {1}".format(friend, global_key))
-                    f_all_user.write('\n')
-                    f_all_user.flush()
-                    cur.execute(insert_sql, (friend, global_key))
-                    db.commit()
-                    crawl_user_friends(friend)
+    for global_key in father_nodes:
+        each_user_friends = ['coding']  # 初始化一个共有用户, 此用户无friends_api与followers_api
+        friends_api = 'https://coding.net/api/user/friends/{0}'.format(global_key)
+        print friends_api
+        fr = requests.get(friends_api, params=payload)
+        if fr.status_code == 200:
+            f_json = fr.json()
+            if f_json['code'] == 0:
+                user_friends_info = f_json['data']['list']
+                for fi in user_friends_info:
+                    friend = fi['global_key']
+                    if friend not in each_user_friends:
+                        each_user_friends.append(friend)
+                user_all_friends = ','.join(each_user_friends)
+                cur.execute(insert_sql, (global_key, user_all_friends))
+                db.commit()
+                each_user_friends.remove('coding')
+                crawl_user_friends(each_user_friends)
+            else:
+                print f_json['code']
         else:
-            print f_json['code']
-    else:
-        print fr.status_code
+            print fr.status_code
 
 
 def crawl_user_followers(global_key):
@@ -96,14 +99,15 @@ def crawl_user_followers(global_key):
 
 
 def main():
-    user_global_key = crawl_best_user()
-    if user_global_key:
-        crawl_user_friends(user_global_key)
-    else:
-        print '未获取到第一个用户信息'
-        sys.exit()
-    f_all_user.close()
-    db.close()
+    seed_users = crawl_best_user()
+    print seed_users
+    # if seed_users:
+    #     crawl_user_friends(seed_users)
+    # else:
+    #     print '未获取到第一个用户信息'
+    #     sys.exit()
+    # f_all_user.close()
+    # db.close()
 
 
 if __name__ == '__main__':
