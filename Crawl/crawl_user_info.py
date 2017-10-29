@@ -5,13 +5,9 @@
 import requests
 import sqlite3
 import sys
-import os
 
 sys.path.append("..")
 from Lib.my_lib import WriteLog, re_joint_dir_by_os, load_user_agents, div_list
-
-ua_file = os.path.abspath('user_agents.txt')
-ua_list = load_user_agents(ua_file)
 
 wl = WriteLog(re_joint_dir_by_os("..|Logs|crawl_user_info.log"))
 
@@ -49,7 +45,6 @@ def get_each_user_info(users_gk):
             wl.wl_info("当前爬取用户URL为: {}".format(user_info_api))
         except Exception, url_api_err:
             wl.wl_error("拼接获取用户信息API-URL错误: {}".format(url_api_err))
-            wl.wl_info("当前爬取用户的URL: {}".format(user_info_api))
             continue
         try:
             r = requests.get(user_info_api)

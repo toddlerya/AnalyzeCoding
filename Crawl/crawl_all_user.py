@@ -19,9 +19,6 @@ headers = {
     "Accept-Encoding": "gzip, deflate, br"
 }
 
-ua_file = os.path.abspath('user_agents.txt')
-ua_list = load_user_agents(ua_file)
-
 wl = WriteLog(re_joint_dir_by_os("..|Logs|crawl_all_user.log"))
 
 db_path = re_joint_dir_by_os('..|Data|analyzecoding.db')
