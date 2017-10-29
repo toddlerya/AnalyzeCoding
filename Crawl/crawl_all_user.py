@@ -108,27 +108,24 @@ def crawl_user_friends(father_nodes):
         if fr.status_code == 200:
             f_json = fr.json()
             if f_json['code'] == 0:
+                num_friends = f_json['data']['totalRow']
                 user_friends_info = f_json['data']['list']
                 for fi in user_friends_info:
                     friend = fi['global_key']
                     if check_need_save(friend):  # 若用户没有入库则加入抓取队列
                         next_loop.append(friend)
-                    else:
-                        continue
                     each_user_friends.append(friend)
-                user_all_friends = ','.join(each_user_friends)
-                num_friends = len(each_user_friends)
+                user_friends = ','.join(each_user_friends)
                 follower_res = crawl_user_followers(global_key)  # 获取用户的粉丝数据
                 if follower_res:
                     num_followers = follower_res[0]
-                    user_all_followers = follower_res[1]
+                    user_followers = follower_res[1]
                 else:  # 若获取粉丝数据失败则置为空
                     num_followers = u""
-                    user_all_followers = u""
-                # if check_need_save(global_key):
+                    user_followers = u""
                 try:
                     cur.execute(insert_sql,
-                                (global_key, num_friends, user_all_friends, num_followers, user_all_followers))
+                                (global_key, num_friends, user_friends, num_followers, user_followers))
                     db.commit()
                     wl.wl_info("当前抓取用户入库成功: {}".format(global_key.encode('utf-8')))
                 except Exception as save_err:
@@ -163,13 +160,13 @@ def crawl_user_followers(__global_key):
     if __fr.status_code == 200:
         __f_json = __fr.json()
         if __f_json['code'] == 0:
+            num_followers = __f_json['data']['totalRow']
             user_friends_info = __f_json['data']['list']
             for fi in user_friends_info:
                 follower = fi['global_key']
                 each_user_followers.append(follower)
-            user_all_followers = ','.join(each_user_followers)
-            num_followers = len(each_user_followers)
-            return num_followers, user_all_followers
+            user_followers = ','.join(each_user_followers)
+            return num_followers, user_followers
         else:
             wl.wl_error("获取followers-api的json数据状态码错误,状态码为: {0}, url为: {1}".format(__f_json['code'], followers_api))
     else:
