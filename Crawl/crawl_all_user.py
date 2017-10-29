@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 # author: toddler
+# update: 20171029
 
 import requests
 import sys
@@ -26,7 +27,9 @@ wl = WriteLog(re_joint_dir_by_os("..|Logs|crawl_all_user.log"))
 db_path = re_joint_dir_by_os('..|Data|analyzecoding.db')
 db = sqlite3.connect(db_path)
 cur = db.cursor()
-insert_sql = "INSERT INTO coding_all_user (global_key, friends_count, friends) VALUES (?, ?, ?)"
+
+# 改为更新字段，若数据已经存在，但是用户有了新的社交关系，也要重新入库
+insert_sql = "REPLACE INTO coding_all_user (global_key, friends_count, friends, followers_count, followers) VALUES (?, ?, ?, ?, ?)"
 
 cur.execute("SELECT global_key FROM coding_all_user")
 temp_query_db_users = cur.fetchall()
@@ -35,6 +38,24 @@ if len(temp_query_db_users) > 0:
     all_user_list = db_users
 else:
     all_user_list = ['coding']  # 初始化一个共有用户, 此用户无friends_api与followers_api
+
+
+def check_need_save(global_key):
+    """
+    校验此用户数据是否已经入库
+    :param global_key: 用户全局唯一标识
+    :return: True需要入库, False不需要入库
+    """
+    try:
+        cur.execute("SELECT count(*) FROM coding_all_user WHERE global_key=?", (global_key,))
+        check_res = cur.fetchone()[0]
+        if check_res == 0:  # 未入库
+            return True
+        else:
+            return False
+    except Exception as check_err:
+        wl.wl_error("校验此用户{0}是否已经入库发生错误: {1}".format(global_key.encode('utf-8'), check_err))
+        return True
 
 
 def crawl_best_user():
@@ -77,14 +98,15 @@ def crawl_user_friends(father_nodes):
         'pageSize': '999999999'
     }
     for global_key in father_nodes:
-        each_user_friends = list()
-        if global_key in all_user_list:
+        if global_key == 'coding':
             continue
+        each_user_friends = list()
+        next_loop = list()
         try:
             friends_api = 'https://coding.net/api/user/friends/{0}'.format(global_key.encode('utf-8'))
         except Exception, url_api_err:
             wl.wl_error("拼接获取朋友API-URL错误: {}".format(url_api_err))
-            wl.wl_info("当前爬取URL: {}".format(friends_api))
+            continue
         fr = requests.get(friends_api, params=payload)
         if fr.status_code == 200:
             f_json = fr.json()
@@ -92,27 +114,69 @@ def crawl_user_friends(father_nodes):
                 user_friends_info = f_json['data']['list']
                 for fi in user_friends_info:
                     friend = fi['global_key']
-                    # if friend not in each_user_friends:
+                    if check_need_save(friend):  # 若用户没有入库则加入抓取队列
+                        next_loop.append(friend)
+                    else:
+                        continue
                     each_user_friends.append(friend)
                 user_all_friends = ','.join(each_user_friends)
-                count_num = len(each_user_friends)
-                cur.execute(insert_sql, (global_key, count_num, user_all_friends))
-                db.commit()
-                all_user_list.append(global_key)
-                crawl_user_friends(each_user_friends)
+                num_friends = len(each_user_friends)
+                follower_res = crawl_user_followers(global_key)  # 获取用户的粉丝数据
+                if follower_res:
+                    num_followers = follower_res[0]
+                    user_all_followers = follower_res[1]
+                else:  # 若获取粉丝数据失败则置为空
+                    num_followers = u""
+                    user_all_followers = u""
+                # if check_need_save(global_key):
+                try:
+                    cur.execute(insert_sql,
+                                (global_key, num_friends, user_all_friends, num_followers, user_all_followers))
+                    db.commit()
+                    wl.wl_info("当前抓取用户入库成功: {}".format(global_key.encode('utf-8')))
+                except Exception as save_err:
+                    wl.wl_error("当前抓取用户入库失败: {0}, 报错信息: {1}".format(global_key.encode('utf-8'), save_err))
+                if len(next_loop) > 0:  # 判断是否要进行下一次迭代
+                    crawl_user_friends(next_loop)
+                else:
+                    continue
             else:
                 wl.wl_error("获取friends-api的json数据状态码错误,状态码为: {0}, url为: {1}".format(f_json['code'], friends_api))
         else:
             wl.wl_error("访问{0}错误, HTTP状态码为: {1}".format(friends_api, fr.status_code))
 
 
-def crawl_user_followers(global_key):
+def crawl_user_followers(__global_key):
     """
     获取用户的粉丝列表
-    :param global_key 用户的全局唯一标识
-    :return:
+    :param __global_key 用户全局唯一标识
+    :return: list
     """
-    followers_api = 'https://coding.net/api/user/followers/{}?page=1&pageSize=999999999'.format(global_key)
+    each_user_followers = list()
+    __payload = {
+        'page': '1',
+        'pageSize': '999999999'
+    }
+    try:
+        followers_api = 'https://coding.net/api/user/followers/{0}'.format(__global_key.encode('utf-8'))
+    except Exception, url_api_err:
+        wl.wl_error("拼接获取粉丝API-URL错误: {}".format(url_api_err))
+        return False
+    __fr = requests.get(followers_api, params=__payload)
+    if __fr.status_code == 200:
+        __f_json = __fr.json()
+        if __f_json['code'] == 0:
+            user_friends_info = __f_json['data']['list']
+            for fi in user_friends_info:
+                follower = fi['global_key']
+                each_user_followers.append(follower)
+            user_all_followers = ','.join(each_user_followers)
+            num_followers = len(each_user_followers)
+            return num_followers, user_all_followers
+        else:
+            wl.wl_error("获取followers-api的json数据状态码错误,状态码为: {0}, url为: {1}".format(__f_json['code'], followers_api))
+    else:
+        wl.wl_error("访问{0}错误, HTTP状态码为: {1}".format(followers_api, __fr.status_code))
 
 
 def main():
@@ -121,7 +185,7 @@ def main():
         wl.wl_error('未获取到种子用户信息')
         db.close()
     if len(set(all_user_list) - set(hot_users)) > 0 and len(all_user_list) > 1:  # 判断是否需要断点抓取
-        wl.wl_info("从数据库结果开始继续抓取,当前库用户: {}".format(",".join(all_user_list)))
+        wl.wl_info("从数据库结果开始继续抓取,当前库用户个数: {}".format(str(len(all_user_list))))
         crawl_user_friends(all_user_list)
     else:
         wl.wl_info('从热门用户开始抓取,当前热门用户: {}'.format(",".join(hot_users)))
