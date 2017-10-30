@@ -120,9 +120,11 @@ def crawl_user_friends(father_nodes):
                 if follower_res:
                     num_followers = follower_res[0]
                     user_followers = follower_res[1]
+                    followers_new_users = follower_res[2]
                 else:  # 若获取粉丝数据失败则置为空
                     num_followers = u""
                     user_followers = u""
+                    followers_new_users = []
                 try:
                     cur.execute(insert_sql,
                                 (global_key, num_friends, user_friends, num_followers, user_followers))
@@ -130,6 +132,7 @@ def crawl_user_friends(father_nodes):
                     wl.wl_info("当前抓取用户入库成功: {}".format(global_key.encode('utf-8')))
                 except Exception as save_err:
                     wl.wl_error("当前抓取用户入库失败: {0}, 报错信息: {1}".format(global_key.encode('utf-8'), save_err))
+                next_loop.extend(followers_new_users)
                 if len(next_loop) > 0:  # 判断是否要进行下一次迭代
                     crawl_user_friends(next_loop)
                 else:
@@ -146,6 +149,7 @@ def crawl_user_followers(__global_key):
     :param __global_key 用户全局唯一标识
     :return: list
     """
+    next_followers_list = list()
     each_user_followers = list()
     __payload = {
         'page': '1',
@@ -164,9 +168,11 @@ def crawl_user_followers(__global_key):
             user_friends_info = __f_json['data']['list']
             for fi in user_friends_info:
                 follower = fi['global_key']
+                if check_need_save(follower):
+                    next_followers_list.append(follower)
                 each_user_followers.append(follower)
             user_followers = ','.join(each_user_followers)
-            return num_followers, user_followers
+            return num_followers, user_followers, next_followers_list
         else:
             wl.wl_error("获取followers-api的json数据状态码错误,状态码为: {0}, url为: {1}".format(__f_json['code'], followers_api))
     else:
