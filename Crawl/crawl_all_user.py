@@ -138,6 +138,8 @@ def crawl_user_friends(father_nodes):
                     wl.wl_error("当前抓取用户入库失败: {0}, 报错信息: {1}".format(global_key.encode('utf-8'), save_err))
                 next_loop.extend(followers_new_users)
                 if len(next_loop) > 0:  # 判断是否要进行下一次迭代
+                    wl.wl_info("当前global_key: {0}, 当前next_loop: {1}".format(global_key.encode('utf-8'),
+                                                                            ','.join(next_loop).encode()))
                     crawl_user_friends(next_loop)
                 else:
                     continue
