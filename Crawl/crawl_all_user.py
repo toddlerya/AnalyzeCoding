@@ -33,8 +33,10 @@ temp_query_db_users = cur.fetchall()
 if len(temp_query_db_users) > 0:
     db_users = [item[0] for item in temp_query_db_users]
     all_user_list = db_users
+    wl.wl_info("all_user_list 为数据库结果")
 else:
     all_user_list = ['coding']  # 初始化一个共有用户, 此用户无friends_api与followers_api
+    wl.wl_info("all_user_list 为coding, 从头开始")
 
 
 def check_need_save(global_key):
@@ -96,6 +98,8 @@ def crawl_user_friends(father_nodes):
     }
     for global_key in father_nodes:
         if global_key == 'coding':
+            continue
+        if not check_need_save(global_key):
             continue
         each_user_friends = list()
         next_loop = list()
