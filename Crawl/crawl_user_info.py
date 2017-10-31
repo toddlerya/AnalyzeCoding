@@ -58,10 +58,10 @@ def get_each_user_info(users_gk):
     :return:
     """
     for global_key in users_gk:
-        # if not check_need_save(global_key):  # 如果已经在库中则跳过
-        #     continue
+        #if not check_need_save(global_key):  # 如果已经在库中则跳过
+        #    continue
         try:
-            user_info_api = "https://coding.net/api/user/key/{}".format(global_key)
+            user_info_api = "https://coding.net/api/user/key/{}".format(global_key.encode('utf-8'))
             wl.wl_info("当前爬取用户URL为: {}".format(user_info_api.encode('utf-8')))
         except Exception, url_api_err:
             wl.wl_error("拼接获取用户信息API-URL错误: {}".format(url_api_err))
